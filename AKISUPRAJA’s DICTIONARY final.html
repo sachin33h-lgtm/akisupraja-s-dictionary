@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AKISUPRAJA’s DICTIONARY</title>
+<style>
+:root{--bg:#f6f1e9;--card:#fffdf9;--ink:#2b2118;--mute:#7b6b5a;--accent:#9a3412;--accent-ink:#fff;--line:#e6dccd;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16120e;--card:#211b15;--ink:#f4ece1;--mute:#a89886;--accent:#fb923c;--accent-ink:#1a1008;--line:#3a3027;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16120e;--card:#211b15;--ink:#f4ece1;--mute:#a89886;--accent:#fb923c;--accent-ink:#1a1008;--line:#3a3027;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Times New Roman",serif;min-height:100vh;display:flex;justify-content:center;padding:36px 16px}
+main{width:100%;max-width:600px}
+h1{font-size:clamp(1.5rem,6vw,2.1rem);letter-spacing:.04em;margin:0 0 6px;text-align:center;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p.sub{margin:12px 0 24px;color:var(--mute);font-family:system-ui,sans-serif;font-size:.95rem;text-align:center}
+.row{display:flex;gap:8px}
+input{flex:1;min-width:0;font-size:1.15rem;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-family:system-ui,sans-serif}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{font-family:system-ui,sans-serif;font-size:1rem;border:0;border-radius:12px;padding:14px 20px;background:var(--accent);color:var(--accent-ink);cursor:pointer;font-weight:600}
+button:disabled{opacity:.5;cursor:default}
+.card{margin-top:20px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+.lbl{font-family:system-ui,sans-serif;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:0 0 6px}
+.word{font-size:1.8rem;margin:0}
+.pos{font-family:system-ui,sans-serif;font-style:italic;color:var(--mute);margin-left:8px;font-size:.95rem}
+.meaning{margin:8px 0 0;line-height:1.5;font-size:1.05rem}
+.ex{margin:10px 0 0;color:var(--mute);font-style:italic}
+hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.tr{display:flex;align-items:center;gap:12px}
+.trword{font-size:2.2rem;margin:0;line-height:1.25;word-break:break-word}
+.roman{color:var(--mute);font-family:system-ui,sans-serif;margin:2px 0 0}
+.spk{width:48px;height:48px;padding:0;border-radius:50%;font-size:1.3rem;flex:none}
+.note{font-family:system-ui,sans-serif;font-size:.85rem;color:var(--mute);margin:12px 0 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>AKISUPRAJA’s DICTIONARY</h1>
+  <p class="sub">Type any English or Tamil word to see its meaning and translation.</p>
+  <div class="row">
+    <input id="word" type="text" placeholder="e.g. courage, water, நன்றி" autocomplete="off" autocapitalize="none">
+    <button id="go">Search</button>
+  </div>
+  <div id="result" class="card hidden">
+    <p class="lbl">Word</p>
+    <p class="word"><span id="w"></span><span class="pos" id="pos"></span></p>
+    <p class="meaning" id="meaning"></p>
+    <p class="ex" id="ex"></p>
+    <hr>
+    <p class="lbl" id="trlbl">Translation</p>
+    <div class="tr">
+      <button id="speak" class="spk" aria-label="Pronounce translated word" title="Pronounce">🔊</button>
+      <div>
+        <p class="trword" id="tw"></p>
+        <p class="roman" id="roman"></p>
+      </div>
+    </div>
+    <p class="note" id="note"></p>
+  </div>
+</main>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var fb={water:["noun","A clear liquid essential for life, found in rivers, lakes and rain.","தண்ணீர்","thanneer"],friend:["noun","A person you know well and like.","நண்பன்","nanban"],love:["noun","A deep feeling of affection.","அன்பு","anbu"],house:["noun","A building where people live.","வீடு","veedu"],book:["noun","Pages bound together for reading.","புத்தகம்","puthagam"],sun:["noun","The star that gives Earth light and heat.","சூரியன்","sooriyan"],moon:["noun","The natural satellite that orbits Earth.","நிலா","nila"],tree:["noun","A tall plant with a trunk and branches.","மரம்","maram"],flower:["noun","The colourful part of a plant.","பூ","poo"],food:["noun","What people eat to live.","உணவு","unavu"],teacher:["noun","A person who helps others learn.","ஆசிரியர்","aasiriyar"],courage:["noun","The ability to face fear or danger.","தைரியம்","thairiyam"]};
+  var sample=null,voices=[],tLang="ta-IN",tText="";
+  var ready=null;if(window.claude&&claude.use){ready=claude.use("sample").then(function(s){sample=s||null}).catch(function(){})}
+  function lv(){try{voices=speechSynthesis.getVoices()||[]}catch(e){voices=[]}}
+  if("speechSynthesis" in window){lv();speechSynthesis.onvoiceschanged=lv}
+
+  function render(d,inTa){
+    $("w").textContent=d.word;$("pos").textContent=d.pos||"";
+    $("meaning").textContent=d.meaning||"";
+    $("ex").textContent=d.example||"";
+    $("trlbl").textContent=inTa?"English translation":"Tamil translation";
+    $("tw").textContent=d.translation;$("roman").textContent=d.roman||"";
+    tText=d.translation;tLang=inTa?"en-US":"ta-IN";
+    $("note").textContent=d.note||"";
+    $("result").classList.remove("hidden");
+  }
+
+  function speak(){
+    if(!tText)return;
+    if(!("speechSynthesis" in window)){$("note").textContent="Speech isn’t supported in this browser.";return}
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(tText);u.lang=tLang;u.rate=.85;
+    var v=voices.filter(function(x){return x.lang.toLowerCase().indexOf(tLang.slice(0,2))===0})[0];
+    if(v)u.voice=v;
+    else if(tLang==="ta-IN")$("note").textContent="No Tamil voice found on this device, so the pronunciation may sound off. Install a Tamil text-to-speech voice in your system settings.";
+    speechSynthesis.speak(u);
+  }
+
+  async function search(){
+    var w=$("word").value.trim();if(!w)return;
+    var btn=$("go");btn.disabled=true;btn.textContent="…";
+    var inTa=/[\u0B80-\u0BFF]/.test(w),d=null,err="";
+    try{
+      if(ready)await ready;
+      if(sample){
+        var p=inTa
+          ?"The input is a Tamil word. Reply with ONLY compact JSON, no markdown: {\"pos\":\"<part of speech in English>\",\"meaning\":\"<clear meaning in Tamil, one or two sentences>\",\"example\":\"<short Tamil example sentence>\",\"translation\":\"<the English word>\",\"roman\":\"<romanized pronunciation of the Tamil input>\"}.\nWord: "+w
+          :"The input is an English word. Reply with ONLY compact JSON, no markdown: {\"pos\":\"<part of speech>\",\"meaning\":\"<clear meaning in English, one or two sentences>\",\"example\":\"<short English example sentence>\",\"translation\":\"<the Tamil word in Tamil script>\",\"roman\":\"<simple romanized pronunciation of the Tamil word>\"}.\nWord: "+w;
+        for(var a=0;a<2&&!d;a++){
+          var out=await sample(p+"\nNever use double quotes inside the values. If the word is misspelled, use the closest real word.",{modelTier:"default",cache:false});
+          var m=String(out.text||"").replace(/```json|```/g,"").match(/\{[\s\S]*\}/);
+          try{var j=JSON.parse(m[0]);if(j.translation){j.word=w;d=j}}catch(pe){}
+        }
+      }
+    }catch(e){err=(e&&e.code)||"error"}
+    if(!d){
+      var k=w.toLowerCase();
+      if(!inTa&&fb[k]){d={word:w,pos:fb[k][0],meaning:fb[k][1],translation:fb[k][2],roman:fb[k][3],note:sample?"":"Offline mode: only a small built-in word list is available."}}
+      else if(inTa){for(var e in fb){if(fb[e][2]===w){d={word:w,pos:fb[e][0],meaning:fb[e][1],translation:e,roman:fb[e][3],note:"Offline mode: meaning shown in English."};break}}}
+    }
+    btn.disabled=false;btn.textContent="Search";
+    if(!d){d={word:w,meaning:err==="rate_limited"?"Too many lookups too quickly. Wait a few seconds and try again.":err==="not_granted"?"Online lookup is blocked. Reload the page and accept the translation prompt to search any word.":sample?"Couldn’t get a clean answer for that word. Try again, or check the spelling.":"Online lookup is off. Reload the page and accept the translation prompt to search any word.",translation:"—"};tText=""}
+    render(d,inTa);
+  }
+  $("go").onclick=search;$("speak").onclick=speak;
+  $("word").addEventListener("keydown",function(e){if(e.key==="Enter")search()});
+})();
+</script>
+</body>
+</html>
